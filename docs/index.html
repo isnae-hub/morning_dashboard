@@ -1,1 +1,414 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>산들그린 그룹 · 경영지원 대시보드</title>
+<style>
+  :root {
+    --bg: #f7f6f3;
+    --surface: #ffffff;
+    --border: #e8e6df;
+    --text: #1a1a1a;
+    --text-sub: #6b6b6b;
+    --text-hint: #9e9e9e;
+    --teal: #1D9E75;
+    --teal-light: #E1F5EE;
+    --teal-dark: #085041;
+    --red: #E24B4A;
+    --red-light: #FCEBEB;
+    --red-dark: #A32D2D;
+    --amber: #EF9F27;
+    --amber-light: #FAEEDA;
+    --amber-dark: #633806;
+    --blue: #378ADD;
+    --blue-light: #E6F1FB;
+    --blue-dark: #0C447C;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, 'Malgun Gothic', '맑은 고딕', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  .page { max-width: 1100px; margin: 0 auto; padding: 28px 24px 48px; }
+
+  /* 헤더 */
+  .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 8px; }
+  .page-title { font-size: 22px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .page-meta { font-size: 12px; color: var(--text-hint); display: flex; gap: 12px; flex-wrap: wrap; }
+  .meta-item { display: flex; align-items: center; gap: 4px; }
+
+  /* 핵심 지표 카드 */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
+  @media (max-width: 700px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .kpi-card.teal::before { background: var(--teal); }
+  .kpi-card.blue::before { background: var(--blue); }
+  .kpi-card.amber::before { background: var(--amber); }
+  .kpi-card.red::before { background: var(--red); }
+  .kpi-label { font-size: 11px; color: var(--text-hint); margin-bottom: 6px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; }
+  .kpi-value { font-size: 26px; font-weight: 700; letter-spacing: -.5px; margin-bottom: 4px; }
+  .kpi-card.teal .kpi-value { color: var(--teal); }
+  .kpi-card.blue .kpi-value { color: var(--blue); }
+  .kpi-card.amber .kpi-value { color: #BA7517; }
+  .kpi-card.red .kpi-value { color: var(--red); }
+  .kpi-sub { font-size: 12px; color: var(--text-hint); display: flex; align-items: center; gap: 4px; }
+  .kpi-sub.up { color: var(--teal); }
+  .kpi-sub.down { color: var(--red); }
+  .kpi-sub.same { color: var(--text-hint); }
+  .kpi-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; padding: 2px 7px; border-radius: 20px; font-weight: 500; }
+  .badge-red { background: var(--red-light); color: var(--red-dark); }
+  .badge-amber { background: var(--amber-light); color: var(--amber-dark); }
+  .badge-teal { background: var(--teal-light); color: var(--teal-dark); }
+  .badge-blue { background: var(--blue-light); color: var(--blue-dark); }
+
+  /* 섹션 */
+  .section-label {
+    font-size: 11px; font-weight: 600; color: var(--text-hint);
+    letter-spacing: .08em; text-transform: uppercase;
+    margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+  }
+  .main-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; }
+  @media (max-width: 700px) { .main-grid { grid-template-columns: 1fr; } }
+  .left-col { display: flex; flex-direction: column; gap: 16px; }
+  .right-col { display: flex; flex-direction: column; gap: 16px; }
+
+  /* 카드 공통 */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .card-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+  .card-title { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+  .card-link { font-size: 11px; color: var(--blue); text-decoration: none; }
+  .card-link:hover { text-decoration: underline; }
+
+  /* 업무 목록 */
+  .work-item { display: flex; align-items: flex-start; gap: 10px; padding: 9px 16px; border-bottom: 1px solid var(--border); transition: background .1s; }
+  .work-item:last-child { border-bottom: none; }
+  .work-item:hover { background: var(--bg); }
+  .work-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+  .dot-red { background: var(--red); }
+  .dot-amber { background: var(--amber); }
+  .dot-teal { background: var(--teal); }
+  .dot-gray { background: #ccc; }
+  .work-body { flex: 1; min-width: 0; }
+  .work-title { font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .work-meta { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+  .work-corp { font-size: 11px; color: var(--text-hint); }
+  .work-date { font-size: 11px; color: var(--text-hint); margin-left: auto; flex-shrink: 0; }
+
+  /* 리스크 목록 */
+  .risk-item { display: flex; align-items: center; gap: 10px; padding: 8px 16px; border-bottom: 1px solid var(--border); }
+  .risk-item:last-child { border-bottom: none; }
+  .risk-bar-wrap { width: 60px; height: 4px; background: var(--bg); border-radius: 2px; overflow: hidden; flex-shrink: 0; }
+  .risk-bar { height: 100%; border-radius: 2px; }
+  .risk-title { font-size: 12px; color: var(--text); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .risk-d { font-size: 11px; font-weight: 600; flex-shrink: 0; }
+  .risk-d.high { color: var(--red-dark); }
+  .risk-d.mid { color: var(--amber-dark); }
+  .risk-d.low { color: var(--teal-dark); }
+
+  /* 투자 목록 */
+  .invest-item { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-bottom: 1px solid var(--border); }
+  .invest-item:last-child { border-bottom: none; }
+  .invest-ticker { font-size: 12px; font-weight: 700; color: var(--text); width: 54px; flex-shrink: 0; }
+  .invest-name { font-size: 12px; color: var(--text-sub); flex: 1; }
+  .invest-chg { font-size: 12px; font-weight: 600; flex-shrink: 0; }
+  .chg-up { color: var(--teal); }
+  .chg-down { color: var(--red); }
+  .chg-flat { color: var(--text-hint); }
+
+  /* 퀵메뉴 */
+  .quick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px 16px; }
+  .quick-item {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    padding: 10px 8px; border-radius: var(--radius-sm);
+    background: var(--bg); border: 1px solid var(--border);
+    text-decoration: none; color: var(--text);
+    font-size: 11px; font-weight: 500; text-align: center;
+    transition: all .15s;
+  }
+  .quick-item:hover { background: var(--teal-light); border-color: var(--teal); color: var(--teal-dark); }
+  .quick-icon { font-size: 18px; }
+
+  /* 갱신 시각 */
+  .updated-bar { text-align: right; font-size: 11px; color: var(--text-hint); margin-top: 20px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="page-header">
+    <div class="page-title">🏠 경영지원 대시보드</div>
+    <div class="page-meta">
+      <span class="meta-item">🏢 산들그린 그룹 · SDG · WJP · SE</span>
+      <span class="meta-item" id="today-date">—</span>
+    </div>
+  </div>
+
+  <!-- 핵심 지표 -->
+  <div class="kpi-grid">
+    <div class="kpi-card teal">
+      <div class="kpi-label">SDG 통장 잔액</div>
+      <div class="kpi-value" id="sdg-balance">—</div>
+      <div class="kpi-sub" id="sdg-diff">클로브AI 기준</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">WJP 통장 잔액</div>
+      <div class="kpi-value" id="wjp-balance">—</div>
+      <div class="kpi-sub" id="wjp-diff">클로브AI 기준</div>
+    </div>
+    <div class="kpi-card amber">
+      <div class="kpi-label">진행중 업무</div>
+      <div class="kpi-value" id="work-count">—</div>
+      <div class="kpi-sub" id="urgent-info">노션 업무보드 기준</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">D-7 이내 마감</div>
+      <div class="kpi-value" id="deadline-count">—</div>
+      <div class="kpi-sub" id="deadline-top">리스크 + 업무 합산</div>
+    </div>
+  </div>
+
+  <div class="main-grid">
+    <div class="left-col">
+
+      <!-- 업무 보드 -->
+      <div>
+        <div class="section-label">📋 업무 현황 — 긴급·진행중</div>
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">✅ 업무 보드</span>
+            <a class="card-link" href="https://app.notion.com/p/d8c30643ab0b4b578f77739460be8c3a" target="_blank">전체보기 →</a>
+          </div>
+          <div id="work-list">
+            <div class="work-item"><span style="color:var(--text-hint);font-size:12px;padding:4px 0">데이터 로딩 중...</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 투자 노트 -->
+      <div>
+        <div class="section-label">📈 투자 관심 종목</div>
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">📈 투자 분석 노트</span>
+            <a class="card-link" href="https://app.notion.com/p/0f64847287934867b14e2e8e049cac30" target="_blank">전체보기 →</a>
+          </div>
+          <div id="invest-list">
+            <div class="invest-item"><span style="color:var(--text-hint);font-size:12px">데이터 로딩 중...</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="right-col">
+
+      <!-- 리스크 로그 -->
+      <div>
+        <div class="section-label">⚠️ 리스크 모니터링</div>
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">⚠️ 리스크 현황</span>
+            <a class="card-link" href="https://app.notion.com/p/0db9e9d536014705bc796797f711a6a6" target="_blank">전체보기 →</a>
+          </div>
+          <div id="risk-list">
+            <div class="risk-item"><span style="color:var(--text-hint);font-size:12px">데이터 로딩 중...</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 퀵메뉴 -->
+      <div>
+        <div class="section-label">🔗 퀵메뉴</div>
+        <div class="card">
+          <div class="quick-grid">
+            <a class="quick-item" href="http://localhost:7799" target="_blank"><span class="quick-icon">📊</span>자금일보</a>
+            <a class="quick-item" href="https://smarta.wehago.com/#/smarta/account" target="_blank"><span class="quick-icon">🏦</span>WEHAGO</a>
+            <a class="quick-item" href="https://app.clobe.ai/clobe/home" target="_blank"><span class="quick-icon">🤖</span>클로브AI</a>
+            <a class="quick-item" href="https://www.wehago.com/#/eapprovals" target="_blank"><span class="quick-icon">📋</span>전자결재</a>
+            <a class="quick-item" href="https://slack.com" target="_blank"><span class="quick-icon">💬</span>Slack</a>
+            <a class="quick-item" href="https://app.notion.com/p/386e9c15ad44810bbecddc448615383f" target="_blank"><span class="quick-icon">🏠</span>노션홈</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="updated-bar">최종 갱신: <span id="updated-at">—</span></div>
+</div>
+
+<script>
+const NOTION_TOKEN = '';
+const WORK_DB = 'd8c30643ab0b4b578f77739460be8c3a';
+const RISK_DB = 'f6ae2ec3a48b4e778b681d796b6ff619';
+const INVEST_DB = '07c9204d73c04f138cb7e01f4138b202';
+const HEADERS = {
+  'Authorization': 'Bearer ' + NOTION_TOKEN,
+  'Notion-Version': '2022-06-28',
+  'Content-Type': 'application/json'
+};
+
+function today() {
+  return new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric',weekday:'short'});
+}
+function daysLeft(dateStr) {
+  if (!dateStr) return null;
+  const diff = Math.ceil((new Date(dateStr) - new Date().setHours(0,0,0,0)) / 86400000);
+  return diff;
+}
+function dLabel(d) {
+  if (d === null) return '';
+  if (d < 0) return `D+${Math.abs(d)}`;
+  if (d === 0) return 'D-day';
+  return `D-${d}`;
+}
+function fmtWon(n) {
+  if (!n && n !== 0) return '—';
+  if (n >= 100000000) return (n/100000000).toFixed(1) + '억';
+  if (n >= 10000) return Math.round(n/10000) + '만';
+  return n.toLocaleString() + '원';
+}
+
+async function queryNotion(dbId, payload) {
+  const r = await fetch(`https://api.notion.com/v1/databases/${dbId}/query`, {
+    method: 'POST', headers: HEADERS, body: JSON.stringify(payload)
+  });
+  return r.json();
+}
+
+async function loadDashboard() {
+  document.getElementById('today-date').textContent = today();
+  document.getElementById('updated-at').textContent = new Date().toLocaleTimeString('ko-KR');
+
+  try {
+    const workData = await queryNotion(WORK_DB, {
+      filter: { property: '진행상태', status: { does_not_equal: '완료' } },
+      sorts: [{ property: '우선순위', direction: 'ascending' }, { property: '마감일', direction: 'ascending' }]
+    });
+    const tasks = workData.results || [];
+    const inProgress = tasks.filter(t => {
+      const s = t.properties?.진행상태?.status?.name;
+      return s === '진행 중' || s === '시작 전';
+    });
+    const urgent = tasks.filter(t => t.properties?.우선순위?.select?.name?.includes('긴급'));
+    const d7tasks = tasks.filter(t => {
+      const d = daysLeft(t.properties?.마감일?.date?.start);
+      return d !== null && d <= 7;
+    });
+
+    document.getElementById('work-count').textContent = inProgress.length + '건';
+    document.getElementById('urgent-info').innerHTML = urgent.length > 0
+      ? `<span class="kpi-badge badge-red">🔴 긴급 ${urgent.length}건</span>`
+      : '<span style="color:var(--teal)">✅ 긴급 없음</span>';
+    document.getElementById('deadline-count').textContent = d7tasks.length + '건';
+    if (d7tasks.length > 0) {
+      const top = d7tasks[0].properties?.업무명?.title?.[0]?.plain_text || '';
+      document.getElementById('deadline-top').textContent = top.length > 14 ? top.slice(0,14)+'…' : top;
+    }
+
+    const wl = document.getElementById('work-list');
+    const show = tasks.slice(0, 7);
+    if (show.length === 0) {
+      wl.innerHTML = '<div class="work-item"><span style="color:var(--text-hint);font-size:12px;padding:4px 0">✅ 진행중 업무 없음</span></div>';
+    } else {
+      wl.innerHTML = show.map(t => {
+        const title = t.properties?.업무명?.title?.[0]?.plain_text || '(제목 없음)';
+        const pri = t.properties?.우선순위?.select?.name || '';
+        const corp = t.properties?.법인?.select?.name || '';
+        const due = t.properties?.마감일?.date?.start || '';
+        const d = daysLeft(due);
+        const dotClass = pri.includes('긴급') ? 'dot-red' : pri.includes('중요') ? 'dot-amber' : t.properties?.진행상태?.status?.name === '완료' ? 'dot-gray' : 'dot-teal';
+        const badge = pri.includes('긴급') ? '<span class="kpi-badge badge-red">긴급</span>'
+          : pri.includes('중요') ? '<span class="kpi-badge badge-amber">중요</span>'
+          : '<span class="kpi-badge badge-teal">일반</span>';
+        const dStr = d !== null ? dLabel(d) : (due ? due.slice(5) : '');
+        return `<div class="work-item">
+          <div class="work-dot ${dotClass}"></div>
+          <div class="work-body">
+            <div class="work-title">${title}</div>
+            <div class="work-meta">${badge}<span class="work-corp">${corp}</span><span class="work-date">${dStr}</span></div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  } catch(e) { console.error('업무보드 로드 실패', e); }
+
+  try {
+    const riskData = await queryNotion(RISK_DB, {
+      filter: { property: '처리상태', status: { does_not_equal: '완료' } },
+      sorts: [{ property: '만료마감일', direction: 'ascending' }]
+    });
+    const risks = (riskData.results || []).slice(0, 5);
+    const rl = document.getElementById('risk-list');
+    if (risks.length === 0) {
+      rl.innerHTML = '<div class="risk-item"><span style="color:var(--text-hint);font-size:12px">✅ 활성 리스크 없음</span></div>';
+    } else {
+      rl.innerHTML = risks.map(r => {
+        const title = r.properties?.리스크명?.title?.[0]?.plain_text || '';
+        const sev = r.properties?.심각도?.select?.name || '';
+        const due = r.properties?.만료마감일?.date?.start || '';
+        const d = daysLeft(due);
+        const barW = d !== null ? Math.max(10, Math.min(100, 100 - d * 5)) : 30;
+        const barColor = sev.includes('High') ? 'var(--red)' : sev.includes('Mid') ? 'var(--amber)' : 'var(--teal)';
+        const dClass = sev.includes('High') ? 'high' : sev.includes('Mid') ? 'mid' : 'low';
+        const dStr = d !== null ? dLabel(d) : '상시';
+        return `<div class="risk-item">
+          <div class="risk-bar-wrap"><div class="risk-bar" style="width:${barW}%;background:${barColor}"></div></div>
+          <div class="risk-title">${title}</div>
+          <div class="risk-d ${dClass}">${dStr}</div>
+        </div>`;
+      }).join('');
+    }
+  } catch(e) { console.error('리스크 로드 실패', e); }
+
+  try {
+    const investData = await queryNotion(INVEST_DB, {
+      filter: { property: '투자상태', select: { does_not_equal: '매도완료' } },
+      sorts: [{ property: '분석점수', direction: 'ascending' }]
+    });
+    const stocks = (investData.results || []).slice(0, 5);
+    const il = document.getElementById('invest-list');
+    if (stocks.length === 0) {
+      il.innerHTML = '<div class="invest-item"><span style="color:var(--text-hint);font-size:12px">등록된 종목 없음</span></div>';
+    } else {
+      il.innerHTML = stocks.map(s => {
+        const name = s.properties?.종목명?.title?.[0]?.plain_text || '';
+        const ticker = s.properties?.티커?.rich_text?.[0]?.plain_text || '';
+        const sector = s.properties?.섹터?.select?.name || '';
+        const status = s.properties?.투자상태?.select?.name || '';
+        const score = s.properties?.분석점수?.select?.name || '';
+        return `<div class="invest-item">
+          <div class="invest-ticker">${ticker || name.slice(0,4)}</div>
+          <div class="invest-name">${sector} · ${status}</div>
+          <span class="kpi-badge badge-${score === '★★★' ? 'teal' : score === '★★' ? 'blue' : 'amber'}">${score}</span>
+        </div>`;
+      }).join('');
+    }
+  } catch(e) { console.error('투자노트 로드 실패', e); }
+}
+
+loadDashboard();
+setInterval(loadDashboard, 5 * 60 * 1000);
+</script>
+</body>
+</html>
 
