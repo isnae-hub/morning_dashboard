@@ -153,6 +153,25 @@
 </style>
 </head>
 <body>
+
+<!-- 토큰 입력 모달 -->
+<div id="token-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:12px;padding:28px 24px;width:420px;max-width:90vw;">
+    <div style="font-size:16px;font-weight:600;margin-bottom:6px;">🔑 Notion API 토큰 설정</div>
+    <div style="font-size:12px;color:#888;margin-bottom:16px;">토큰은 이 브라우저에만 저장됩니다. GitHub에 업로드되지 않습니다.</div>
+    <input id="token-input" type="password" placeholder="ntn_xxxxxxxxxxxxxxxx"
+      style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;margin-bottom:12px;font-family:monospace;"
+      onkeydown="if(event.key==='Enter')applyToken()">
+    <div style="font-size:11px;color:#aaa;margin-bottom:16px;">
+      발급 경로: notion.so → 설정 → 연결 → 내 API 통합 → isnae 통합의 토큰 복사
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button onclick="hideTokenModal()" style="padding:8px 16px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;">취소</button>
+      <button onclick="applyToken()" style="padding:8px 16px;border:none;border-radius:8px;background:#1D9E75;color:#fff;cursor:pointer;font-size:13px;font-weight:600;">저장 & 로드</button>
+    </div>
+  </div>
+</div>
+
 <div class="page">
 
   <div class="page-header">
@@ -160,6 +179,7 @@
     <div class="page-meta">
       <span class="meta-item">🏢 산들그린 그룹 · SDG · WJP · SE</span>
       <span class="meta-item" id="today-date">—</span>
+      <span class="meta-item" style="cursor:pointer;color:#1D9E75;" onclick="showTokenModal()">⚙️ 토큰 설정</span>
     </div>
   </div>
 
@@ -257,15 +277,45 @@
 </div>
 
 <script>
-const NOTION_TOKEN = '';
-const WORK_DB = 'd8c30643ab0b4b578f77739460be8c3a';
-const RISK_DB = 'f6ae2ec3a48b4e778b681d796b6ff619';
+function getToken() {
+  return localStorage.getItem('notion_token') || '';
+}
+function saveToken(t) {
+  localStorage.setItem('notion_token', t.trim());
+}
+
+const WORK_DB   = 'd8c30643ab0b4b578f77739460be8c3a';
+const RISK_DB   = 'f6ae2ec3a48b4e778b681d796b6ff619';
 const INVEST_DB = '07c9204d73c04f138cb7e01f4138b202';
-const HEADERS = {
-  'Authorization': 'Bearer ' + NOTION_TOKEN,
-  'Notion-Version': '2022-06-28',
-  'Content-Type': 'application/json'
-};
+
+function getHeaders() {
+  return {
+    'Authorization': 'Bearer ' + getToken(),
+    'Notion-Version': '2022-06-28',
+    'Content-Type': 'application/json'
+  };
+}
+
+function showTokenModal() {
+  const overlay = document.getElementById('token-overlay');
+  const input   = document.getElementById('token-input');
+  overlay.style.display = 'flex';
+  input.value = getToken();
+  input.focus();
+}
+function hideTokenModal() {
+  document.getElementById('token-overlay').style.display = 'none';
+}
+function applyToken() {
+  const val = document.getElementById('token-input').value.trim();
+  if (!val.startsWith('ntn_')) {
+    alert('올바른 Notion 토큰을 입력하세요. (ntn_ 으로 시작)');
+    return;
+  }
+  saveToken(val);
+  hideTokenModal();
+  loadDashboard();
+}
 
 function today() {
   return new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric',weekday:'short'});
@@ -290,12 +340,13 @@ function fmtWon(n) {
 
 async function queryNotion(dbId, payload) {
   const r = await fetch(`https://api.notion.com/v1/databases/${dbId}/query`, {
-    method: 'POST', headers: HEADERS, body: JSON.stringify(payload)
+    method: 'POST', headers: getHeaders(), body: JSON.stringify(payload)
   });
   return r.json();
 }
 
 async function loadDashboard() {
+  if (!getToken()) { showTokenModal(); return; }
   document.getElementById('today-date').textContent = today();
   document.getElementById('updated-at').textContent = new Date().toLocaleTimeString('ko-KR');
 
@@ -411,4 +462,3 @@ setInterval(loadDashboard, 5 * 60 * 1000);
 </script>
 </body>
 </html>
-
